@@ -7,12 +7,28 @@ WHERE movies.id = $1
 GROUP BY movies.id
 LIMIT 1;
 
+-- -- name: ListMovies :many
+-- SELECT movies.*,AVG(ratings.rating) AS average_rating
+-- FROM movies
+-- LEFT JOIN ratings 
+-- ON movies.id = ratings.movie_id;
+
+
 -- name: ListMovies :many
-SELECT movies.*,AVG(ratings.rating) AS average_rating
+SELECT movies.*,COALESCE(AVG(ratings.rating), 0.0) AS average_rating
 FROM movies
 LEFT JOIN ratings 
-ON movies.id = ratings.movie_id;
+ON movies.id = ratings.movie_id
+WHERE (movies.title ILIKE '%' || $1 || '%' OR $1 IS NULL)
+  AND (movies.release_date >= $2 OR $2 IS NULL)
+  AND (movies.release_date <= $3 OR $3 IS NULL)
+GROUP BY movies.id
+ORDER BY movies.id 
+LIMIT $4 OFFSET $5;
 
+-- name: CountMovies :one
+SELECT COUNT(movies) FROM movies;
+   
 
 -- name: CreateMovie :one
 INSERT INTO movies (

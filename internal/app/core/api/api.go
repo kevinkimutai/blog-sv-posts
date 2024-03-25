@@ -24,6 +24,13 @@ func (a *Application) CreateNewMovie(movie domain.Movie) (domain.Movie, error) {
 	return movie, err
 }
 
+func (a *Application) GetMovies(movieParams domain.MovieParams) (domain.FetchData, error) {
+
+	data, err := a.db.GetAllMovies(movieParams)
+
+	return data, err
+}
+
 func (a *Application) GetMovie(movieID int64) (*domain.Movie, error) {
 	//TODO:HANDLE ERRORS
 	movie, err := a.db.GetMovieById(movieID)

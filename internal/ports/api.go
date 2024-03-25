@@ -7,6 +7,7 @@ import (
 type APIPort interface {
 	//Movie Interfaces
 	GetMovie(movieID int64) (*domain.Movie, error)
+	GetMovies(movieParams domain.MovieParams) (domain.FetchData, error)
 	CreateNewMovie(movie domain.Movie) (domain.Movie, error)
 	//Ratings Interfaces
 	CreateNewRating(rating domain.Rating) (domain.Rating, error)

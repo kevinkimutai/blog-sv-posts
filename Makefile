@@ -7,7 +7,7 @@ dropdb:
 migrateup:
 	migrate -path "./internal/adapter/db/sqlc/migrations" -database "postgresql://root:p@ssw0rd@localhost:5431/moviedb?sslmode=disable" -verbose up
 migratedown:
-	migrate -path "./internal/adapter/db/sqlc/migrations" -database "postgresql://root:p@ssw0rd@localhost:5431/moviedb?sslmode=disable" -verbose down
+	migrate -path "./internal/adapter/db/sqlc/migrations" -database "postgresql://root:p@ssw0rd@localhost:5431/moviedb?sslmode=disable" -verbose down 
 
 	 
 

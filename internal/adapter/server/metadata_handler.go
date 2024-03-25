@@ -51,6 +51,38 @@ func (s *ServerAdapter) CreateMovie(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(res)
 }
 
+func (s *ServerAdapter) GetAllMovies(c *fiber.Ctx) error {
+
+	//Get Query Params
+	m := c.Queries()
+
+	//Bind To movieParams
+	movieParams := domain.CheckMovieParams(m)
+
+	//api
+	data, err := s.api.GetMovies(movieParams)
+	if err != nil {
+		return c.Status(500).JSON(
+			domain.ErrorResponse{
+				StatusCode: 500,
+				Message:    err.Error(),
+			})
+	}
+
+	//Map Response
+	res := domain.Response{
+		StatusCode:    200,
+		Message:       "success",
+		Page:          data.Page,
+		NumberOfPages: data.NumberOfPages,
+		Total:         data.Total,
+		Data:          data.Data,
+	}
+
+	return c.Status(fiber.StatusOK).JSON(res)
+
+}
+
 func (s *ServerAdapter) GetMovieMetadataByID(c *fiber.Ctx) error {
 	movieID := c.Params("movieID")
 

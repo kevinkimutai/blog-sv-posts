@@ -11,13 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countMovies = `-- name: CountMovies :one
+SELECT COUNT(movies) FROM movies
+`
+
+func (q *Queries) CountMovies(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countMovies)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMovie = `-- name: CreateMovie :one
 INSERT INTO movies (
   title, description, director
 ) VALUES (
   $1, $2, $3
 )
-RETURNING id, title, description, director, created_at
+RETURNING id, title, description, director, created_at, release_date
 `
 
 type CreateMovieParams struct {
@@ -35,6 +46,7 @@ func (q *Queries) CreateMovie(ctx context.Context, arg CreateMovieParams) (Movie
 		&i.Description,
 		&i.Director,
 		&i.CreatedAt,
+		&i.ReleaseDate,
 	)
 	return i, err
 }
@@ -76,7 +88,7 @@ func (q *Queries) DeleteMovie(ctx context.Context, id int64) error {
 }
 
 const getMovie = `-- name: GetMovie :one
-SELECT movies.id, movies.title, movies.description, movies.director, movies.created_at,COALESCE(AVG(ratings.rating), 0.0) AS average_rating
+SELECT movies.id, movies.title, movies.description, movies.director, movies.created_at, movies.release_date,COALESCE(AVG(ratings.rating), 0.0) AS average_rating
 FROM movies
 LEFT JOIN ratings 
 ON movies.id = ratings.movie_id
@@ -91,6 +103,7 @@ type GetMovieRow struct {
 	Description   string
 	Director      string
 	CreatedAt     pgtype.Timestamptz
+	ReleaseDate   pgtype.Date
 	AverageRating interface{}
 }
 
@@ -103,17 +116,34 @@ func (q *Queries) GetMovie(ctx context.Context, id int64) (GetMovieRow, error) {
 		&i.Description,
 		&i.Director,
 		&i.CreatedAt,
+		&i.ReleaseDate,
 		&i.AverageRating,
 	)
 	return i, err
 }
 
 const listMovies = `-- name: ListMovies :many
-SELECT movies.id, movies.title, movies.description, movies.director, movies.created_at,AVG(ratings.rating) AS average_rating
+
+
+SELECT movies.id, movies.title, movies.description, movies.director, movies.created_at, movies.release_date,COALESCE(AVG(ratings.rating), 0.0) AS average_rating
 FROM movies
 LEFT JOIN ratings 
 ON movies.id = ratings.movie_id
+WHERE (movies.title ILIKE '%' || $1 || '%' OR $1 IS NULL)
+  AND (movies.release_date >= $2 OR $2 IS NULL)
+  AND (movies.release_date <= $3 OR $3 IS NULL)
+GROUP BY movies.id
+ORDER BY movies.id 
+LIMIT $4 OFFSET $5
 `
+
+type ListMoviesParams struct {
+	Column1       pgtype.Text
+	ReleaseDate   pgtype.Date
+	ReleaseDate_2 pgtype.Date
+	Limit         int32
+	Offset        int32
+}
 
 type ListMoviesRow struct {
 	ID            int64
@@ -121,11 +151,23 @@ type ListMoviesRow struct {
 	Description   string
 	Director      string
 	CreatedAt     pgtype.Timestamptz
-	AverageRating float64
+	ReleaseDate   pgtype.Date
+	AverageRating interface{}
 }
 
-func (q *Queries) ListMovies(ctx context.Context) ([]ListMoviesRow, error) {
-	rows, err := q.db.Query(ctx, listMovies)
+// -- name: ListMovies :many
+// SELECT movies.*,AVG(ratings.rating) AS average_rating
+// FROM movies
+// LEFT JOIN ratings
+// ON movies.id = ratings.movie_id;
+func (q *Queries) ListMovies(ctx context.Context, arg ListMoviesParams) ([]ListMoviesRow, error) {
+	rows, err := q.db.Query(ctx, listMovies,
+		arg.Column1,
+		arg.ReleaseDate,
+		arg.ReleaseDate_2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +181,7 @@ func (q *Queries) ListMovies(ctx context.Context) ([]ListMoviesRow, error) {
 			&i.Description,
 			&i.Director,
 			&i.CreatedAt,
+			&i.ReleaseDate,
 			&i.AverageRating,
 		); err != nil {
 			return nil, err

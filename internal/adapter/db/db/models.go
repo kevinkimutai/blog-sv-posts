@@ -14,6 +14,7 @@ type Movie struct {
 	Description string
 	Director    string
 	CreatedAt   pgtype.Timestamptz
+	ReleaseDate pgtype.Date
 }
 
 type Rating struct {

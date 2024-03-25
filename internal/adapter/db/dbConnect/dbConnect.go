@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -59,9 +61,104 @@ func (a *DBAdapter) CreateMovie(movie domain.Movie) (domain.Movie, error) {
 
 }
 
+// Define named query in your sqlc queries file (query.sql)
+
+func (a *DBAdapter) GetAllMovies(movieParams domain.MovieParams) (domain.FetchData, error) {
+	args, err := getParams(movieParams)
+	if err != nil {
+		return domain.FetchData{}, err
+	}
+
+	//Movie records based on params
+	movies, err := a.queries.ListMovies(a.ctx, args)
+	if err != nil {
+		return domain.FetchData{}, err
+	}
+
+	//Total Count Records
+	totalMovies, err := a.queries.CountMovies(a.ctx)
+	if err != nil {
+		return domain.FetchData{}, err
+	}
+
+	var data []interface{}
+	for _, movie := range movies {
+		data = append(data, movie)
+	}
+
+	return domain.FetchData{
+		Page:          getPage(args.Offset, args.Limit),
+		NumberOfPages: uint(math.Ceil(float64(totalMovies) / float64(args.Limit))),
+		Total:         uint(totalMovies),
+		Data:          data,
+	}, nil
+
+}
+
+func getParams(movieParams domain.MovieParams) (db.ListMoviesParams, error) {
+	var searchStr pgtype.Text
+	var release_date_start, release_date_end pgtype.Date
+	var limit, offset int32 = 10, 0
+
+	//Get Params
+	if movieParams.SearchString != "" {
+		searchStr.Scan(movieParams.SearchString)
+	}
+
+	if movieParams.MovieStartAirDate != "" {
+		//convert to type time
+		date, err := time.Parse("2006-01-02", movieParams.MovieStartAirDate)
+		release_date_start.Scan(date)
+		if err != nil {
+			return db.ListMoviesParams{}, err
+		}
+	}
+
+	if movieParams.MovieEndAirDate != "" {
+		//convert to type time
+		date, err := time.Parse("2006-01-02", movieParams.MovieEndAirDate)
+		release_date_end.Scan(date)
+		if err != nil {
+			return db.ListMoviesParams{}, err
+		}
+	}
+
+	if movieParams.Limit != "" {
+		items, err := strconv.Atoi(movieParams.Limit)
+
+		limit = int32(items)
+		if err != nil {
+			return db.ListMoviesParams{}, err
+		}
+	}
+	if movieParams.Page != "" {
+		page, err := strconv.Atoi(movieParams.Page)
+
+		if page < 1 {
+			page = 1
+		}
+
+		offset = (int32(page) - 1) * limit
+		if err != nil {
+			return db.ListMoviesParams{}, err
+		}
+	}
+
+	return db.ListMoviesParams{
+		Column1:       searchStr,
+		ReleaseDate:   release_date_start,
+		ReleaseDate_2: release_date_end,
+		Limit:         limit,
+		Offset:        offset,
+	}, nil
+}
+
+func getPage(offset, limit int32) uint {
+	return uint((offset / limit) + 1)
+}
+
 func (a *DBAdapter) GetMovieById(movieID int64) (*domain.Movie, error) {
 	movie, err := a.queries.GetMovie(a.ctx, movieID)
-	fmt.Println("Movie : ", movie)
 
 	avgRating, ok := interfaceToFloat64(movie.AverageRating)
 	if ok != nil {

@@ -6,6 +6,7 @@ import (
 
 type DBPort interface {
 	//Movie Interfaces
+	GetAllMovies(movieParams domain.MovieParams) (domain.FetchData, error)
 	GetMovieById(movieID int64) (*domain.Movie, error)
 	CreateMovie(movie domain.Movie) (domain.Movie, error)
 	//Ratings Interfaces
