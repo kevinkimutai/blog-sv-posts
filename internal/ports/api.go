@@ -1,8 +1,13 @@
 package ports
 
-import "github.com/kevinkimutai/metadata/internal/adapter/db/db"
+import (
+	"github.com/kevinkimutai/metadata/internal/app/core/domain"
+)
 
 type APIPort interface {
-	GetMovie(movieID int64) (db.Movie, error)
-	CreateNewMovie(movie db.Movie) (db.Movie, error)
+	//Movie Interfaces
+	GetMovie(movieID int64) (*domain.Movie, error)
+	CreateNewMovie(movie domain.Movie) (domain.Movie, error)
+	//Ratings Interfaces
+	CreateNewRating(rating domain.Rating) (domain.Rating, error)
 }

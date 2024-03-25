@@ -23,6 +23,7 @@ func (s *ServerAdapter) Run() {
 	app.Use(logger.New())
 
 	// Define routes
+	app.Route("/api/v1/rating", s.RatingsRouter)
 	app.Route("/api/v1/metadata", s.MetadataRouter)
 
 	app.Listen(":" + s.port)

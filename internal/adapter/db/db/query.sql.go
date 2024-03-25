@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createMovie = `-- name: CreateMovie :one
@@ -37,9 +39,35 @@ func (q *Queries) CreateMovie(ctx context.Context, arg CreateMovieParams) (Movie
 	return i, err
 }
 
+const createRating = `-- name: CreateRating :one
+INSERT INTO ratings (
+  movie_id, rating
+) VALUES (
+  $1, $2
+)
+RETURNING id, movie_id, rating, created_at
+`
+
+type CreateRatingParams struct {
+	MovieID int64
+	Rating  pgtype.Numeric
+}
+
+func (q *Queries) CreateRating(ctx context.Context, arg CreateRatingParams) (Rating, error) {
+	row := q.db.QueryRow(ctx, createRating, arg.MovieID, arg.Rating)
+	var i Rating
+	err := row.Scan(
+		&i.ID,
+		&i.MovieID,
+		&i.Rating,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const deleteMovie = `-- name: DeleteMovie :exec
 DELETE FROM movies
-WHERE id = $1
+WHERE movies.id = $1
 `
 
 func (q *Queries) DeleteMovie(ctx context.Context, id int64) error {
@@ -48,43 +76,70 @@ func (q *Queries) DeleteMovie(ctx context.Context, id int64) error {
 }
 
 const getMovie = `-- name: GetMovie :one
-SELECT id, title, description, director, created_at FROM movies
-WHERE id = $1 LIMIT 1
+SELECT movies.id, movies.title, movies.description, movies.director, movies.created_at,COALESCE(AVG(ratings.rating), 0.0) AS average_rating
+FROM movies
+LEFT JOIN ratings 
+ON movies.id = ratings.movie_id
+WHERE movies.id = $1 
+GROUP BY movies.id
+LIMIT 1
 `
 
-func (q *Queries) GetMovie(ctx context.Context, id int64) (Movie, error) {
+type GetMovieRow struct {
+	ID            int64
+	Title         string
+	Description   string
+	Director      string
+	CreatedAt     pgtype.Timestamptz
+	AverageRating interface{}
+}
+
+func (q *Queries) GetMovie(ctx context.Context, id int64) (GetMovieRow, error) {
 	row := q.db.QueryRow(ctx, getMovie, id)
-	var i Movie
+	var i GetMovieRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
 		&i.Description,
 		&i.Director,
 		&i.CreatedAt,
+		&i.AverageRating,
 	)
 	return i, err
 }
 
 const listMovies = `-- name: ListMovies :many
-SELECT id, title, description, director, created_at FROM movies
-ORDER BY title
+SELECT movies.id, movies.title, movies.description, movies.director, movies.created_at,AVG(ratings.rating) AS average_rating
+FROM movies
+LEFT JOIN ratings 
+ON movies.id = ratings.movie_id
 `
 
-func (q *Queries) ListMovies(ctx context.Context) ([]Movie, error) {
+type ListMoviesRow struct {
+	ID            int64
+	Title         string
+	Description   string
+	Director      string
+	CreatedAt     pgtype.Timestamptz
+	AverageRating float64
+}
+
+func (q *Queries) ListMovies(ctx context.Context) ([]ListMoviesRow, error) {
 	rows, err := q.db.Query(ctx, listMovies)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Movie
+	var items []ListMoviesRow
 	for rows.Next() {
-		var i Movie
+		var i ListMoviesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
 			&i.Description,
 			&i.Director,
 			&i.CreatedAt,
+			&i.AverageRating,
 		); err != nil {
 			return nil, err
 		}
@@ -101,7 +156,7 @@ UPDATE movies
   set title = $1,
   description = $2,
   director= $3
-WHERE id = $1
+WHERE movies.id = $1
 `
 
 type UpdateMovieParams struct {

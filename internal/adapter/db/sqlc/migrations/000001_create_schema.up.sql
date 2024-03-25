@@ -5,3 +5,10 @@ CREATE TABLE movies (
   "director" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
+
+CREATE TABLE ratings (
+  "id" bigserial PRIMARY KEY,
+  "movie_id" bigint NOT NULL,
+  "rating" numeric(3,1) CHECK(rating > 0 AND rating < 10),
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);

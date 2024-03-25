@@ -1,10 +1,18 @@
 -- name: GetMovie :one
-SELECT * FROM movies
-WHERE id = $1 LIMIT 1;
+SELECT movies.*,COALESCE(AVG(ratings.rating), 0.0) AS average_rating
+FROM movies
+LEFT JOIN ratings 
+ON movies.id = ratings.movie_id
+WHERE movies.id = $1 
+GROUP BY movies.id
+LIMIT 1;
 
 -- name: ListMovies :many
-SELECT * FROM movies
-ORDER BY title;
+SELECT movies.*,AVG(ratings.rating) AS average_rating
+FROM movies
+LEFT JOIN ratings 
+ON movies.id = ratings.movie_id;
+
 
 -- name: CreateMovie :one
 INSERT INTO movies (
@@ -19,8 +27,16 @@ UPDATE movies
   set title = $1,
   description = $2,
   director= $3
-WHERE id = $1;
+WHERE movies.id = $1;
 
 -- name: DeleteMovie :exec
 DELETE FROM movies
-WHERE id = $1;
+WHERE movies.id = $1;
+
+-- name: CreateRating :one
+INSERT INTO ratings (
+  movie_id, rating
+) VALUES (
+  $1, $2
+)
+RETURNING *;

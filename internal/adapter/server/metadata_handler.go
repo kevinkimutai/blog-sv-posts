@@ -6,17 +6,16 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/kevinkimutai/metadata/internal/adapter/db/db"
 	"github.com/kevinkimutai/metadata/internal/app/core/domain"
 )
 
 func (s *ServerAdapter) CreateMovie(c *fiber.Ctx) error {
-	movie := db.Movie{}
+	movie := domain.Movie{}
 
 	//Bind To struct
 	if err := c.BodyParser(&movie); err != nil {
 		return c.Status(500).JSON(
-			domain.MovieErrorResponse{
+			domain.ErrorResponse{
 				StatusCode: 500,
 				Message:    err.Error(),
 			})
@@ -26,7 +25,7 @@ func (s *ServerAdapter) CreateMovie(c *fiber.Ctx) error {
 	movie, err := domain.NewMovieDomain(movie)
 	if err != nil {
 		return c.Status(400).JSON(
-			domain.MovieErrorResponse{
+			domain.ErrorResponse{
 				StatusCode: 400,
 				Message:    err.Error(),
 			})
@@ -36,15 +35,15 @@ func (s *ServerAdapter) CreateMovie(c *fiber.Ctx) error {
 	movie, err = s.api.CreateNewMovie(movie)
 	if err != nil {
 		return c.Status(500).JSON(
-			domain.MovieErrorResponse{
+			domain.ErrorResponse{
 				StatusCode: 500,
 				Message:    err.Error(),
 			})
 	}
 
 	//Map Response
-	res := domain.MovieResponse{
-		StatusCode: 200,
+	res := domain.DataResponse{
+		StatusCode: 201,
 		Message:    "success",
 		Data:       movie,
 	}
@@ -54,10 +53,11 @@ func (s *ServerAdapter) CreateMovie(c *fiber.Ctx) error {
 
 func (s *ServerAdapter) GetMovieMetadataByID(c *fiber.Ctx) error {
 	movieID := c.Params("movieID")
+
 	//Check If MovieID exists
 	if movieID == "" {
 		return c.Status(400).JSON(
-			domain.MovieErrorResponse{
+			domain.ErrorResponse{
 				StatusCode: 500,
 				Message:    "missing movieID",
 			})
@@ -74,7 +74,7 @@ func (s *ServerAdapter) GetMovieMetadataByID(c *fiber.Ctx) error {
 	if err != nil {
 		//Dismiss No Movie With ID Error
 		if err.Error() == "no rows in result set" {
-			res := domain.MovieErrorResponse{
+			res := domain.ErrorResponse{
 				StatusCode: 200,
 				Message:    fmt.Sprintf("No Movie With ID:%v", movieID),
 			}
@@ -83,7 +83,7 @@ func (s *ServerAdapter) GetMovieMetadataByID(c *fiber.Ctx) error {
 		}
 
 		//Map Error
-		res := domain.MovieErrorResponse{
+		res := domain.ErrorResponse{
 			StatusCode: 500,
 			Message:    err.Error(),
 		}
@@ -92,10 +92,10 @@ func (s *ServerAdapter) GetMovieMetadataByID(c *fiber.Ctx) error {
 	}
 
 	//Map Response
-	res := domain.MovieResponse{
+	res := domain.DataResponse{
 		StatusCode: 200,
 		Message:    "success",
-		Data:       movie,
+		Data:       &movie,
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res)

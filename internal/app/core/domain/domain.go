@@ -2,35 +2,68 @@ package domain
 
 import (
 	"errors"
-
-	"github.com/kevinkimutai/metadata/internal/adapter/db/db"
+	"time"
 )
 
-type MovieResponse struct {
-	StatusCode uint     `json:"status_code"`
-	Message    string   `json:"message"`
-	Data       db.Movie `json:"data"`
+type DataResponse struct {
+	StatusCode uint        `json:"status_code"`
+	Message    string      `json:"message"`
+	Data       interface{} `json:"data"`
 }
 
-type MovieErrorResponse struct {
+type ErrorResponse struct {
 	StatusCode uint   `json:"status_code"`
 	Message    string `json:"message"`
 }
 
-type MoviesResponse struct {
-	StatusCode    uint       `json:"status_code"`
-	Message       string     `json:"message"`
-	Page          uint       `json:"page"`
-	NumberOfPages uint       `json:"number_of_pages"`
-	TotalMovies   uint       `json:"total_movies"`
-	Data          []db.Movie `json:"data"`
+type Response struct {
+	StatusCode    uint          `json:"status_code"`
+	Message       string        `json:"message"`
+	Page          uint          `json:"page"`
+	NumberOfPages uint          `json:"number_of_pages"`
+	TotalMovies   uint          `json:"total_movies"`
+	Data          []interface{} `json:"data"`
 }
 
 type MovieParams struct{}
 
-func NewMovieDomain(movie db.Movie) (db.Movie, error) {
-	if movie.Title == "" || movie.Director == "" || movie.Description == "" {
-		return movie, errors.New("missing title/director/description fields")
+type Movie struct {
+	ID            int64     `json:"id"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description"`
+	Director      string    `json:"director"`
+	CreatedAt     time.Time `json:"created_at"`
+	AverageRating float64   `json:"average_rating"`
+}
+
+type Rating struct {
+	ID        int64     `json:"id"`
+	MovieID   int64     `json:"movie_id"`
+	Rating    float64   `json:"rating"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func NewMovieDomain(movie Movie) (Movie, error) {
+	if movie.Title == "" {
+		return movie, errors.New("missing title field")
 	}
+	if movie.Description == "" {
+		return movie, errors.New("missing description field")
+	}
+	if movie.Director == "" {
+		return movie, errors.New("missing director field")
+	}
+
 	return movie, nil
+}
+
+func NewRatingsDomain(rating Rating) (Rating, error) {
+	if rating.MovieID == 0 {
+		return rating, errors.New("missing movie_id field")
+	}
+	if rating.Rating == 0 {
+		return rating, errors.New("missing rating field")
+	}
+
+	return rating, nil
 }

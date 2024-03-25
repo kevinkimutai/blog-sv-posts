@@ -15,3 +15,10 @@ type Movie struct {
 	Director    string
 	CreatedAt   pgtype.Timestamptz
 }
+
+type Rating struct {
+	ID        int64
+	MovieID   int64
+	Rating    pgtype.Numeric
+	CreatedAt pgtype.Timestamptz
+}
