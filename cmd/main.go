@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -17,10 +18,19 @@ func main() {
 		log.Fatal("Error loading .env files")
 	}
 
-	PORT := os.Getenv("APPLICATION_PORT")
-
 	// Get database connection details from environment variables
-	DBURL := os.Getenv("DATABASE_URL")
+	POSTGRES_USERNAME := os.Getenv("POSTGRES_USERNAME")
+	POSTGRES_PASSWORD := os.Getenv("POSTGRES_PASSWORD")
+	PORT := os.Getenv("APPLICATION_PORT")
+	DATABASE_PORT := os.Getenv("DATABASE_PORT")
+
+	//Concatinate DB String
+	DBURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+		POSTGRES_USERNAME,
+		POSTGRES_PASSWORD,
+		"localhost",
+		DATABASE_PORT,
+		"moviedb")
 
 	//Connect To DB
 	dbAdapter := dbconnect.NewDB(DBURL)

@@ -22,8 +22,10 @@ WORKDIR /app
 
 COPY --from=build-stage /app/main ./main
 
-ENV DATABASE_URL=postgres://root:p@ssw0rd@localhost:5431/moviedb \
-    APPLICATION_PORT=8000 
+ENV POSTGRES_USERNAME=root \
+    POSTGRES_PASSWORD=p@ssw0rd \
+    APPLICATION_PORT=8000 \
+    DATABASE_PORT=5431
 
 EXPOSE 8000
 
