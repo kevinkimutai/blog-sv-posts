@@ -2,21 +2,19 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	dbconnect "github.com/kevinkimutai/metadata/internal/adapter/db/dbConnect"
 	"github.com/kevinkimutai/metadata/internal/adapter/server"
 	application "github.com/kevinkimutai/metadata/internal/app/core/api"
 )
 
 func main() {
-	//Get env var
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env files")
-	}
+	// //Get env var in development
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal("Error loading .env files")
+	// }
 
 	// Get database connection details from environment variables
 	POSTGRES_USERNAME := os.Getenv("POSTGRES_USERNAME")
