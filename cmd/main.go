@@ -2,19 +2,22 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
-	dbconnect "github.com/kevinkimutai/metadata/internal/adapter/db/dbConnect"
+	"github.com/joho/godotenv"
+	"github.com/kevinkimutai/metadata/internal/adapter/db"
+	handler "github.com/kevinkimutai/metadata/internal/adapter/handlers"
 	"github.com/kevinkimutai/metadata/internal/adapter/server"
 	application "github.com/kevinkimutai/metadata/internal/app/core/api"
 )
 
 func main() {
-	// //Get env var in development
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatal("Error loading .env files")
-	// }
+	//Get env var in development
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env files")
+	}
 
 	// Get database connection details from environment variables
 	POSTGRES_USERNAME := os.Getenv("POSTGRES_USERNAME")
@@ -31,12 +34,17 @@ func main() {
 		"moviedb")
 
 	//Connect To DB
-	dbAdapter := dbconnect.NewDB(DBURL)
+	dbAdapter := db.NewDB(DBURL)
 
-	//Application
-	application := application.NewApplication(dbAdapter)
+	//Dependency Injection
+	movieRepo := application.NewMovieRepo(dbAdapter)
+	ratingRepo := application.NewRatingRepo(dbAdapter)
+
+	//Services
+	ratingService := handler.NewRatingService(ratingRepo)
+	movieService := handler.NewMovieService(movieRepo)
 
 	//Server
-	server := server.New(PORT, application)
+	server := server.New(PORT, movieService, ratingService)
 	server.Run()
 }

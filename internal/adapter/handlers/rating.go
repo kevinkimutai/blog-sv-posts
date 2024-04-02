@@ -1,11 +1,30 @@
-package server
+package handler
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/kevinkimutai/metadata/internal/app/core/domain"
+	"github.com/kevinkimutai/metadata/internal/ports"
 )
 
-func (s *ServerAdapter) CreateMovieRating(c *fiber.Ctx) error {
+type RatingService struct {
+	api ports.RatingApiPort
+}
+
+func NewRatingService(api ports.RatingApiPort) *RatingService {
+	return &RatingService{api: api}
+}
+
+// CreateMovieRating registers a new movie rating
+// @Summary Create a new movie rating
+// @Description Create Rating
+// @Tags rating
+// @Accept json
+// @Produce json
+// @Param body domain.Rating true "Create Rating"
+// @Success 201 {object} domain.DataResponse "success"
+// @Failure 400 {object} domain.ErrorResponse{}
+// @Router /rating [post]
+func (s *RatingService) CreateMovieRating(c *fiber.Ctx) error {
 	rating := domain.Rating{}
 
 	//Bind To struct

@@ -5,5 +5,5 @@ import (
 )
 
 func (s *ServerAdapter) RatingsRouter(api fiber.Router) {
-	api.Post("/", s.CreateMovieRating)
+	api.Post("/", s.rating.CreateMovieRating)
 }
